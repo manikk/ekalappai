@@ -1,3 +1,7 @@
+import pyHook
+from pyHook.HookManager import HookConstants
+import pythoncom
+
 __author__ = 'manikk'
 
 import sys
@@ -12,7 +16,8 @@ from PyQt5.Qt import QSharedMemory, QSplashScreen, \
     QSystemTrayIcon, qApp, QSettings, QGroupBox, QLabel, \
     QComboBox, QIcon, QHBoxLayout,QCheckBox,QAction,QDialog,QMenu,QVBoxLayout
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import qWarning
+from PyQt5.QtCore import qWarning, Qt
+
 
 class EKWindow(QDialog):
 
@@ -26,7 +31,6 @@ class EKWindow(QDialog):
         self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_tw.png"), "Typewriter")
         self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_bamini.png"), "Bamini")
         self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_inscript.png"), "Inscript")
-
         iconLayout = QHBoxLayout(self)
         iconLayout.addWidget(self.iconLabel)
         iconLayout.addWidget(self.iconComboBox)
@@ -102,12 +106,12 @@ class EKWindow(QDialog):
         self.otherSettingsGroupBox.setLayout(otherSettingsLayout)
 
     #This function is called when the shortcut combo is changed
-    def setShortcut2(self, index) :
-        self.shortcutKey =   self.shortcutComboBox2.currentText()
+    def setShortcut2(self, index):
+        self.shortcutKey = self.shortcutComboBox2.currentText()
         self.iniSettings.setValue("shortcut", self.shortcutKey)
         if self.shortcutKey == "ESC" :
             self.shortCutKeyHex = 0x1B
-        elif self.shortcutKey == "F1" :
+        elif self.shortcutKey == "F1":
             self.shortCutKeyHex = 0x70
         elif self.shortcutKey == "F2":
             self.shortCutKeyHex = 0x71
@@ -187,24 +191,26 @@ class EKWindow(QDialog):
     def loadKeyBoard(self):
         #file handling code
         if self.selectedKeyboard == 1 :
-            self.fileName = "keyboards/Tamil-tamil99.txt.in"
+            self.fileName = "tables/Tamil-tamil99.txt.in"
         elif self.selectedKeyboard == 2 :
-            self.fileName = "keyboards/Tamil-phonetic.txt.in"
+            self.fileName = "tables/Tamil-phonetic.txt.in"
         elif self.selectedKeyboard == 3 :
-            self.fileName = "keyboards/Tamil-typewriter.txt.in"
+            self.fileName = "tables/Tamil-typewriter.txt.in"
         elif self.selectedKeyboard == 4 :
-            self.fileName = "keyboards/Tamil-bamini.txt.in"
+            self.fileName = "tables/Tamil-bamini.txt.in"
         elif self.selectedKeyboard == 5:
-            self.fileName = "keyboards/Tamil-inscript.txt.in"
+            self.fileName = "tables/Tamil-inscript.txt.in"
         else:
             pass
 
+
     #This function is called when keyboard is toggled or when keyboard is changed from setting window.
     def changeKeyboard(self,index):
-        icon = self.iconComboBox.itemIcon(index)
+        self.iconComboBox.setCurrentIndex(int(index))
+        icon = self.iconComboBox.itemIcon(int(index))
         self.trayIcon.setIcon(icon)
         self.setWindowIcon(icon)
-        self.trayIcon.setToolTip(self.iconComboBox.itemText(index));
+        self.trayIcon.setToolTip(self.iconComboBox.itemText(int(index)))
         #call remove hook before cecking for the keyboard choosen .
         #removeHook();
         #logic to start a keyboard hook or remove keyboard hook based on the keyboard choosen
@@ -221,13 +227,10 @@ class EKWindow(QDialog):
                 self.keyboardStatus = False
             else:
                 self.keyboardStatus = True
-
             if self.keyboardStatus:
-                 if self.currentKeyboard == 0:
-                    self.changeKeyboard(self.selectedKeyboar)
+                self.changeKeyboard(self.selectedKeyboard)
             else:
-                if self.currentKeyboard > 0:
-                     self.changeKeyboard(0)
+                self.changeKeyboard(0)
         elif reason == QSystemTrayIcon.MiddleClick:
             pass
         else:
@@ -236,7 +239,7 @@ class EKWindow(QDialog):
     def showTrayMessage(self, index):
         icon = QSystemTrayIcon.MessageIcon(0)
         #this system messages proves to be more annoyance than benefit so hiding it
-        message = self.iconComboBox.itemText(index)+ " set";
+        message = self.iconComboBox.itemText(int(index)) + " set"
         self.trayIcon.showMessage(qApp.applicationName() + " " + qApp.applicationVersion(),message, icon, 100)
 
     #Function to add or disable registry entry to auto start ekalappai with windows for the current users
@@ -253,22 +256,22 @@ class EKWindow(QDialog):
     #This function is called when the shortcut modifier combo is changed
     def setShortcut1(self,index):
         self.iniSettings.setValue("shortcut_modifier", self.shortcutComboBox1.currentText())
-        self.shortcutModifierKey = self.initSettings.value("shortcut_modifier")
+        self.shortcutModifierKey = self.iniSettings.value("shortcut_modifier")
         #if none is selected, the allowed single key shortcuts should change
         if index == 0 :
             self.shortcutComboBox2.clear()
-            self.shortcutComboBox2.addItem("ESC");
-            self.shortcutComboBox2.addItem("F1");
-            self.shortcutComboBox2.addItem("F2");
-            self.shortcutComboBox2.addItem("F3");
-            self.shortcutComboBox2.addItem("F4");
-            self.shortcutComboBox2.addItem("F5");
-            self.shortcutComboBox2.addItem("F6");
-            self.shortcutComboBox2.addItem("F7");
-            self.shortcutComboBox2.addItem("F8");
-            self.shortcutComboBox2.addItem("F9");
-            self.shortcutComboBox2.addItem("F10");
-        else :
+            self.shortcutComboBox2.addItem("ESC")
+            self.shortcutComboBox2.addItem("F1")
+            self.shortcutComboBox2.addItem("F2")
+            self.shortcutComboBox2.addItem("F3")
+            self.shortcutComboBox2.addItem("F4")
+            self.shortcutComboBox2.addItem("F5")
+            self.shortcutComboBox2.addItem("F6")
+            self.shortcutComboBox2.addItem("F7")
+            self.shortcutComboBox2.addItem("F8")
+            self.shortcutComboBox2.addItem("F9")
+            self.shortcutComboBox2.addItem("F10")
+        else:
             self.shortcutComboBox2.clear()
             self.shortcutComboBox2.addItem("1")
             self.shortcutComboBox2.addItem("2")
@@ -281,16 +284,47 @@ class EKWindow(QDialog):
             self.shortcutComboBox2.addItem("9")
             self.shortcutComboBox2.addItem("0")
 
+    def onKeyboardEvent(self, event):
+        if self.iniSettings.value("shortcut_modifier") == "NONE":
+            print(event.KeyID)
+            if self.shortCutKeyHex == event.KeyID:
+                self.iconActivated(QSystemTrayIcon.Trigger)
+        elif self.iniSettings.value("shortcut_modifier") == "CTRL":
+            lCtrl = pyHook.GetKeyState(162)
+            rCtrl = pyHook.GetKeyState(163)
+            ctrlPressed = False
+            if lCtrl or rCtrl:
+                ctrlPressed = True
+            if ctrlPressed and event.KeyID == self.shortCutKeyHex:
+                self.iconActivated(QSystemTrayIcon.Trigger)
+        elif self.iniSettings.value("shortcut_modifier") == "ALT":
+            lAlt = pyHook.GetKeyState(164)
+            rAlt = pyHook.GetKeyState(165)
+            altPressed = False
+            if lAlt or rAlt:
+                altPressed = True
+            if altPressed and event.KeyID == self.shortCutKeyHex:
+                self.iconActivated(QSystemTrayIcon.Trigger)
+        return True
+
     def __init__(self):
         super(EKWindow, self).__init__()
         settingsFilePath = os.getenv("APPDATA") + "\\" + qApp.applicationName() + "\eksettings.ini"
         if not os.path.exists(settingsFilePath):
-            shutil.copyfile(qApp.applicationDirPath() + "\eksettings.ini", settingsFilePath)
+            settingsDir = os.getenv("APPDATA") + "\\" + qApp.applicationName()
+            if not os.path.exists(settingsDir):
+                os.makedirs(settingsDir)
+            settingPath = ""
+            if getattr(sys, 'frozen', False):
+                settingPath = os.path.dirname(sys.executable)
+            elif __file__:
+                settingPath = os.path.dirname(__file__)
+            shutil.copyfile(os.path.join(settingPath, "eksettings.ini"), settingsFilePath)
             pass
 
         self.keyboardStatus = False
         self.iniSettings = QSettings(settingsFilePath, QSettings.IniFormat)
-        self.registrySettings = QSettings("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", QSettings.NativeFormat);
+        self.registrySettings = QSettings("HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run", QSettings.NativeFormat)
         self.shortCutModifierKey = self.iniSettings.value("shortcut_modifier")
         self.shortcutKey = self.iniSettings.value("shortcut")
         self.selectedKeyboard = self.iniSettings.value("selected_keyboard")
@@ -311,25 +345,27 @@ class EKWindow(QDialog):
         self.mainLayout.addWidget(self.iconGroupBox)
         self.mainLayout.addWidget(self.shortcutGroupBox)
         self.mainLayout.addWidget(self.otherSettingsGroupBox)
-        self.setLayout(self.mainLayout);
+        self.setLayout(self.mainLayout)
 
-        if self.keyboardStatus == True :
+        if self.keyboardStatus == True:
             self.iconComboBox.setCurrentIndex(self.selectedKeyBoard);
-        else :
-            self.changeKeyboard(0);
-            self.iconComboBox.setCurrentIndex(0);
+        else:
+            self.changeKeyboard(0)
+            self.iconComboBox.setCurrentIndex(0)
 
         self.trayIcon.show()
-
+        self.setShortcut2(self.iniSettings.value("shortcut"))
         self.setWindowTitle(qApp.applicationName()+ " " + qApp.applicationVersion())
+        self.hm = pyHook.HookManager()
+        self.hm.KeyDown = self.onKeyboardEvent
+        self.hm.HookKeyboard()
+        pythoncom.PumpMessages()
 
 
-if __name__ == '__main__' :
-    print("called")
+if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setApplicationName("eKalappai")
     app.setApplicationVersion("4.0.0")
-
     shared = QSharedMemory("59698760-43bb-44d9-8121-181ecbb70e4d")
 
     if not shared.create(512, QSharedMemory.ReadWrite):
@@ -347,11 +383,3 @@ if __name__ == '__main__' :
     ekWindow = EKWindow()
 
     sys.exit(app.exec_())
-
-
-
-
-
-
-
-
