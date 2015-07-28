@@ -11,6 +11,7 @@ from PyQt5.Qt import QSharedMemory, QSplashScreen, \
     QComboBox, QIcon, QHBoxLayout, QCheckBox, QAction, QDialog, QMenu, QVBoxLayout
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import qWarning
+from pykalappai.ekengine import EKEngine
 
 
 class EKWindow(QDialog):
@@ -36,6 +37,7 @@ class EKWindow(QDialog):
         self.selectedKeyboard = self.iniSettings.value("selected_keyboard")
         self.keyboardStatus = False
         self.fileName = ""
+        self.engine = EKEngine()
 
         # Ui variable Initialization
         self.iconGroupBox = QGroupBox("Keyboards")
@@ -82,10 +84,10 @@ class EKWindow(QDialog):
         self.setWindowTitle(qApp.applicationName() + " " + qApp.applicationVersion())
 
         # Pyhook for listening to shortcut key event
-        self.hm = pyHook.HookManager()
+        '''self.hm = pyHook.HookManager()
         self.hm.KeyDown = self.on_keyboard_event
         self.hm.HookKeyboard()
-        pythoncom.PumpMessages()
+        pythoncom.PumpMessages()'''
 
     def init_settings(self):
         """
@@ -276,11 +278,28 @@ class EKWindow(QDialog):
             self.fileName = "tables/Tamil-inscript.txt.in"
         else:
             pass
+    def getPath(self, index):
+            if index == 1:
+                self.path = "tables/Tamil-tamil99.txt.in"
+            elif index == 2:
+                self.path = "tables/Tamil-phonetic.txt.in"
+            elif index == 3:
+                self.path = "tables/Tamil-typewriter.txt.in"
+            elif index == 4:
+                self.path = "tables/Tamil-bamini.txt.in"
+            elif index == 5:
+                self.path = "tables/Tamil-inscript.txt.in"
+            else:
+                pass
+
 
     def change_keyboard(self, index):
         """
             Function to change the keyboard based on the index which was sent as a param
         """
+        if int(index) != 0:
+            self.iniSettings.setValue("selected_keyboard", index)
+            self.selectedKeyboard = index
         self.iconComboBox.setCurrentIndex(int(index))
         icon = self.iconComboBox.itemIcon(int(index))
         self.trayIcon.setIcon(icon)
@@ -292,6 +311,11 @@ class EKWindow(QDialog):
         # callHook(index);
         self.show_tray_message(index)
         self.load_keyboard()
+        if int(index) != 0:
+            self.getPath(int(index))
+            self.engine.hook(self.path)
+        else:
+            self.engine.unHook()
 
     def icon_activated(self, reason):
         """

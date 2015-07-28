@@ -6,14 +6,6 @@ import winpipe
 from parse_scim_table import ScimTableParser
 
 class EKEngine:
-    charPressed = ""
-    charsToSend = ""
-    prevCharToDelete = ""
-    prevUnicodeCharLength = 0
-    scimMapping = {}
-    scimMappingReversed = {}
-    validChars = []
-
     def onKeyboardEvent(self,event):
         char =  chr(event.Ascii)
         if char in self.validChars:
@@ -84,17 +76,32 @@ class EKEngine:
         for k, v in self.scimMapping.items():
             self.scimMappingReversed[v] = k
 
-    def initialize(self):
+    def initialize(self, fileName):
         tableParser = ScimTableParser()
-        self.scimMapping = tableParser.parse()
+        self.scimMapping = tableParser.parse(fileName)
         self.setValidChars()
         self.reverseScimMap()
 
-    def __init__(self):
-        self.initialize()
-        hm = pyHook.HookManager()
-        hm.KeyDown = self.onKeyboardEvent
-        hm.HookKeyboard()
+    def unHook(self):
+        try:
+            self.hm.__del__()
+        except:
+            pass
+        return
+
+    def hook(self, fileName):
+        self.initialize(fileName)
+        self.hm.KeyDown = self.onKeyboardEvent
+        self.hm.HookKeyboard()
         pythoncom.PumpMessages()
 
-ekEngine = EKEngine()
+    def __init__(self):
+        self.charPressed = ""
+        self.charsToSend = ""
+        self.prevCharToDelete = ""
+        self.prevUnicodeCharLength = 0
+        self.scimMapping = {}
+        self.scimMappingReversed = {}
+        self.validChars = []
+        self.hm = pyHook.HookManager()
+        self.hm.UnhookMouse()

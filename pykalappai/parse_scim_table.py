@@ -2,11 +2,8 @@ __author__ = 'manikk'
 class ScimTableParser:
     start = False
     scimMappings = {}
-    def parse(self):
-        #sys.stdout = io.TextIOWrapper(sys.stdout.buffer,'cp437','backslashreplace')
-        path = 'tables/Tamil-tamil99.txt.in'
-        #path = 'tables/Tamil-phonetic.txt.in'
-        f = open(path,encoding="utf-8")
+    def parse(self, fileName):
+        f = open(fileName,encoding="utf-8")
         for line in f:
             str = line.strip().encode("utf-8").decode()
             if str == "BEGIN_TABLE":
