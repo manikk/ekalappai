@@ -1,17 +1,20 @@
-import pyHook
-import pythoncom
-import sys
-import time
+__author__ = 'Raj'
+
+
 import os
 import shutil
-import ekalappai_rc
+import time
+import sys
+
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.Qt import QSharedMemory, QSplashScreen, \
     QSystemTrayIcon, qApp, QSettings, QGroupBox, QLabel, \
     QComboBox, QIcon, QHBoxLayout, QCheckBox, QAction, QDialog, QMenu, QVBoxLayout
-from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import qWarning
-from pykalappai.ekengine import EKEngine
+from PyQt5.QtGui import QPixmap
+
+from resources import ekalappai_rc
+from EkEngine.Engine import Engine
 
 
 class EKWindow(QDialog):
@@ -24,6 +27,7 @@ class EKWindow(QDialog):
             Constructor for this class
         """
         super(EKWindow, self).__init__()
+        self.engine = Engine("tables/Tamil-bamini.txt.in")
 
         # Settings file initialization
         self.settingsFilePath = os.getenv("APPDATA") + "\\" + qApp.applicationName() + "\eksettings.ini"
@@ -37,7 +41,6 @@ class EKWindow(QDialog):
         self.selectedKeyboard = self.iniSettings.value("selected_keyboard")
         self.keyboardStatus = False
         self.fileName = ""
-        self.engine = EKEngine()
 
         # Ui variable Initialization
         self.iconGroupBox = QGroupBox("Keyboards")
@@ -46,7 +49,7 @@ class EKWindow(QDialog):
         self.shortcutGroupBox = QGroupBox("Shortcut Setting")
         self.shortcutComboBox1 = QComboBox(self)
         self.shortcutComboBox2 = QComboBox(self)
-        self.otherSettingsGroupBox = QGroupBox("Other Settings");
+        self.otherSettingsGroupBox = QGroupBox("Other Settings")
         self.checkboxStartWithWindows = QCheckBox()
         self.minimizeAction = QAction("Mi&nimize", self)
         self.maximizeAction = QAction("Ma&ximize", self)
@@ -71,7 +74,7 @@ class EKWindow(QDialog):
         self.shortcutComboBox1.currentIndexChanged.connect(self.set_shortcut_modifier)
         self.shortcutComboBox2.currentIndexChanged.connect(self.set_shortcut_key)
         self.trayIcon.activated.connect(self.icon_activated)
-        # self.checkboxStartWithWindows.stateChanged.connect(self.checkboxStartWithWindowsTicked)
+        self.checkboxStartWithWindows.stateChanged.connect(self.checkboxStartWithWindowsTicked)
 
         if self.keyboardStatus:
             self.iconComboBox.setCurrentIndex(self.selectedKeyBoard)
@@ -83,11 +86,11 @@ class EKWindow(QDialog):
         self.set_shortcut_key()
         self.setWindowTitle(qApp.applicationName() + " " + qApp.applicationVersion())
 
-        # Pyhook for listening to shortcut key event
-        '''self.hm = pyHook.HookManager()
-        self.hm.KeyDown = self.on_keyboard_event
-        self.hm.HookKeyboard()
-        pythoncom.PumpMessages()'''
+    def checkboxStartWithWindowsTicked(self, state):
+        if self.checkboxStartWithWindows.isChecked():
+            self.registrySettings.setValue(qApp.applicationName(), sys.argv[0])
+        else:
+            self.registrySettings.remove(qApp.applicationName())
 
     def init_settings(self):
         """
@@ -103,7 +106,7 @@ class EKWindow(QDialog):
                 setting_path = os.path.dirname(sys.executable)
             elif __file__:
                 setting_path = os.path.dirname(__file__)
-            shutil.copyfile(os.path.join(setting_path, "eksettings.ini"), self.settingsFilePath)
+            shutil.copyfile(os.path.join(setting_path, "resources\eksettings.ini"), self.settingsFilePath)
         return
 
     def create_settings_group_boxes(self):
@@ -189,6 +192,7 @@ class EKWindow(QDialog):
         """
         self.shortcutKey = self.shortcutComboBox2.currentText()
         self.iniSettings.setValue("shortcut", self.shortcutKey)
+        self.register_shortcut_listener()
         if self.shortcutKey == "ESC":
             self.shortcutKeyHex = 0x1B
         elif self.shortcutKey == "F1":
@@ -240,7 +244,11 @@ class EKWindow(QDialog):
         self.maximizeAction.triggered.connect(self.showMaximized)
         self.settingsAction.triggered.connect(self.showNormal)
         self.aboutAction.triggered.connect(self.show_about)
-        self.quitAction.triggered.connect(qApp.quit)
+        self.quitAction.triggered.connect(self.quit)
+
+    def quit(self):
+        self.engine.un_hook()
+        exit(0)
 
     def create_tray_icon(self):
         """
@@ -278,6 +286,7 @@ class EKWindow(QDialog):
             self.fileName = "tables/Tamil-inscript.txt.in"
         else:
             pass
+
     def getPath(self, index):
             if index == 1:
                 self.path = "tables/Tamil-tamil99.txt.in"
@@ -292,7 +301,6 @@ class EKWindow(QDialog):
             else:
                 pass
 
-
     def change_keyboard(self, index):
         """
             Function to change the keyboard based on the index which was sent as a param
@@ -305,17 +313,18 @@ class EKWindow(QDialog):
         self.trayIcon.setIcon(icon)
         self.setWindowIcon(icon)
         self.trayIcon.setToolTip(self.iconComboBox.itemText(int(index)))
-        # call remove hook before cecking for the keyboard choosen .
-        # removeHook();
-        # logic to start a keyboard hook or remove keyboard hook based on the keyboard choosen
-        # callHook(index);
         self.show_tray_message(index)
         self.load_keyboard()
         if int(index) != 0:
             self.getPath(int(index))
-            self.engine.hook(self.path)
+            self.engine.file_name = self.path
+            self.engine.initialize()
+            self.engine.conv_state = True
         else:
-            self.engine.unHook()
+            try:
+                self.engine.conv_state = False
+            except:
+                pass
 
     def icon_activated(self, reason):
         """
@@ -390,34 +399,22 @@ class EKWindow(QDialog):
             self.shortcutComboBox2.addItem("8")
             self.shortcutComboBox2.addItem("9")
             self.shortcutComboBox2.addItem("0")
+        self.register_shortcut_listener()
 
-    def on_keyboard_event(self, event):
-        """
-            Function to listen for the shortcut key press event
-        """
+    def register_shortcut_listener(self):
+        self.engine.event_queue.remove_all()
         if self.iniSettings.value("shortcut_modifier") == "NONE":
-            if self.shortcutKeyHex == event.KeyID:
-                self.icon_activated(QSystemTrayIcon.Trigger)
+            self.engine.event_queue.register_event([[self.shortcutKey], self.icon_activated, QSystemTrayIcon.Trigger])
         elif self.iniSettings.value("shortcut_modifier") == "CTRL":
-            l_ctrl = pyHook.GetKeyState(162)
-            r_ctrl = pyHook.GetKeyState(163)
-            ctrl_pressed = False
-            if l_ctrl or r_ctrl:
-                ctrl_pressed = True
-            if ctrl_pressed and event.KeyID == self.shortcutKeyHex:
-                self.icon_activated(QSystemTrayIcon.Trigger)
+            self.engine.event_queue.register_event([['Lcontrol', self.shortcutKey], self.icon_activated, QSystemTrayIcon.Trigger])
+            self.engine.event_queue.register_event([['Rcontrol', self.shortcutKey], self.icon_activated, QSystemTrayIcon.Trigger])
         elif self.iniSettings.value("shortcut_modifier") == "ALT":
-            l_alt = pyHook.GetKeyState(164)
-            r_alt = pyHook.GetKeyState(165)
-            alt_pressed = False
-            if l_alt or r_alt:
-                alt_pressed = True
-            if alt_pressed and event.KeyID == self.shortcutKeyHex:
-                self.icon_activated(QSystemTrayIcon.Trigger)
+            self.engine.event_queue.register_event([['LMenu', self.shortcutKey], self.icon_activated, QSystemTrayIcon.Trigger])
+            self.engine.event_queue.register_event([['RMenu', self.shortcutKey], self.icon_activated, QSystemTrayIcon.Trigger])
         return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     """
         Main Function which will initialize the app
     """
@@ -429,7 +426,6 @@ if __name__ == '__main__':
     if not shared.create(512, QSharedMemory.ReadWrite):
         qWarning("Cannot start more than one instance of eKalappai any time.")
         exit(0)
-
     splashImage = QPixmap(':/images/intro.png')
     splashScreen = QSplashScreen(splashImage)
     splashScreen.show()
@@ -437,4 +433,5 @@ if __name__ == '__main__':
     splashScreen.hide()
     QApplication.setQuitOnLastWindowClosed(False)
     ekWindow = EKWindow()
+    ekWindow.engine.start()
     sys.exit(app.exec_())
