@@ -1,12 +1,18 @@
-__author__ = 'Raj'
-
+__author__ = "Manikk, Vijay, Mohan"
+__copyright__ = "Copyright (c) 2015 http://thamizha.com/"
+__credits__ = ["Manikk, Vijay, Mohan"]
+__license__ = "GNU/GPL v3 or (at your option) any later version."
+__version__ = "4.0.0"
+__maintainer__ = "http://thamizha.com/"
+__email__ = ""
+__status__ = "Development"
 
 import os
 import shutil
 import time
 import sys
 
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtWidgets import QApplication
 from PyQt5.Qt import QSharedMemory, QSplashScreen, \
     QSystemTrayIcon, qApp, QSettings, QGroupBox, QLabel, \
     QComboBox, QIcon, QHBoxLayout, QCheckBox, QAction, QDialog, QMenu, QVBoxLayout
@@ -14,7 +20,7 @@ from PyQt5.QtCore import qWarning
 from PyQt5.QtGui import QPixmap
 
 from resources import ekalappai_rc
-from EkEngine.Engine import Engine
+from EkEngine import Engine
 
 
 class EKWindow(QDialog):
@@ -51,11 +57,11 @@ class EKWindow(QDialog):
         self.shortcutComboBox2 = QComboBox(self)
         self.otherSettingsGroupBox = QGroupBox("Other Settings")
         self.checkboxStartWithWindows = QCheckBox()
-        self.minimizeAction = QAction("Mi&nimize", self)
-        self.maximizeAction = QAction("Ma&ximize", self)
-        self.settingsAction = QAction("&Settings", self)
-        self.aboutAction = QAction("&About", self)
-        self.quitAction = QAction("&Quit", self)
+        self.minimizeAction = QAction("Minimize", self)
+        self.maximizeAction = QAction("Maximize", self)
+        self.settingsAction = QAction("Settings", self)
+        self.aboutAction = QAction("About", self)
+        self.quitAction = QAction("Quit", self)
         self.trayIconMenu = QMenu(self)
         self.trayIcon = QSystemTrayIcon(self)
         self.mainLayout = QVBoxLayout()
@@ -74,7 +80,7 @@ class EKWindow(QDialog):
         self.shortcutComboBox1.currentIndexChanged.connect(self.set_shortcut_modifier)
         self.shortcutComboBox2.currentIndexChanged.connect(self.set_shortcut_key)
         self.trayIcon.activated.connect(self.icon_activated)
-        self.checkboxStartWithWindows.stateChanged.connect(self.checkboxStartWithWindowsTicked)
+        self.checkboxStartWithWindows.stateChanged.connect(self.checkbox_start_with_windows_ticked)
 
         if self.keyboardStatus:
             self.iconComboBox.setCurrentIndex(self.selectedKeyBoard)
@@ -85,12 +91,6 @@ class EKWindow(QDialog):
         self.trayIcon.show()
         self.set_shortcut_key()
         self.setWindowTitle(qApp.applicationName() + " " + qApp.applicationVersion())
-
-    def checkboxStartWithWindowsTicked(self, state):
-        if self.checkboxStartWithWindows.isChecked():
-            self.registrySettings.setValue(qApp.applicationName(), sys.argv[0])
-        else:
-            self.registrySettings.remove(qApp.applicationName())
 
     def init_settings(self):
         """
@@ -113,12 +113,12 @@ class EKWindow(QDialog):
         """
             UI generator function.
         """
-        self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_en.png"), "No Keyboard")
-        self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_tn99.png"), "Tamil99")
-        self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_anjal.png"), "Phonetic")
-        self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_tw.png"), "Typewriter")
-        self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_bamini.png"), "Bamini")
-        self.iconComboBox.addItem(QIcon(":/images/ekalappai_icons_inscript.png"), "Inscript")
+        self.iconComboBox.addItem("No Keyboard")
+        self.iconComboBox.addItem("Tamil99")
+        self.iconComboBox.addItem("Phonetic")
+        self.iconComboBox.addItem("Typewriter")
+        self.iconComboBox.addItem("Bamini")
+        self.iconComboBox.addItem("Inscript")
         icon_layout = QHBoxLayout(self)
         icon_layout.addWidget(self.iconLabel)
         icon_layout.addWidget(self.iconComboBox)
@@ -360,7 +360,6 @@ class EKWindow(QDialog):
         """
         if self.checkboxStartWithWindows.isChecked():
             self.registrySettings.setValue(qApp.applicationName(), qApp.applicationFilePath())
-            # registry_settings->setValue(qApp->applicationName(),QDir::toNativeSeparators(qApp->applicationFilePath()));
         else:
             self.registrySettings.remove(qApp.applicationName())
 
